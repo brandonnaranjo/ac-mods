@@ -1,0 +1,129 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Windows.Forms;
+
+namespace ItemBrowser
+{
+    public class Item
+    {
+        public string ID;
+        public string Name;
+        public string Category;
+
+        public Item(string id, string name, string category)
+        {
+            ID = id;
+            Name = name;
+            Category = category;
+        }
+    }
+
+    public class MainForm : Form
+    {
+        private TabControl tabControl;
+        private TextBox searchBox;
+        private Label infoLabel;
+        private TrackBar itemLimitSlider;
+        private Label sliderLabel;
+
+        private List<Item> items;
+        private int maxItemsToShow;
+
+        public MainForm()
+        {
+            this.Text = "The Honored One";
+            this.Size = new System.Drawing.Size(800, 800);
+
+            // UI Elements
+            searchBox = new TextBox { Dock = DockStyle.Top, Height = 30, PlaceholderText = "Search items..." };
+            sliderLabel = new Label { Dock = DockStyle.Top, Height = 20, TextAlign = System.Drawing.ContentAlignment.MiddleLeft };
+            itemLimitSlider = new TrackBar { Dock = DockStyle.Top, TickFrequency = 1 };
+            tabControl = new TabControl { Dock = DockStyle.Fill };
+            infoLabel = new Label { Dock = DockStyle.Bottom, Height = 50, TextAlign = System.Drawing.ContentAlignment.MiddleLeft, BackColor = System.Drawing.Color.Black, ForeColor = System.Drawing.Color.Yellow };
+
+            this.Controls.Add(tabControl);
+            this.Controls.Add(infoLabel);
+            this.Controls.Add(itemLimitSlider);
+            this.Controls.Add(sliderLabel);
+            this.Controls.Add(searchBox);
+
+            // Load items
+            LoadItems();
+
+            // Setup slider
+            itemLimitSlider.Minimum = 1;
+            itemLimitSlider.Maximum = items.Count;
+            itemLimitSlider.Value = items.Count;
+            maxItemsToShow = items.Count;
+            sliderLabel.Text = $"Max items to show: {maxItemsToShow}";
+            itemLimitSlider.Scroll += (s, e) =>
+            {
+                maxItemsToShow = itemLimitSlider.Value;
+                sliderLabel.Text = $"Max items to show: {maxItemsToShow}";
+                BuildTabs();
+            };
+
+            // Search box
+            searchBox.TextChanged += (s, e) => BuildTabs();
+
+            // Initial build
+            BuildTabs();
+        }
+
+        private void LoadItems()
+        {
+            var allItems = new List<Item>
+            {
+                new Item("item_apple","Apple","Consumables"),
+                new Item("item_arrow","Arrow","Ammo"),
+                new Item("item_arrow_heart","Heart Arrow","Ammo"),
+                new Item("item_backpack","Backpack","Bags"),
+                new Item("item_flashlight","Flashlight","Gadgets"),
+                new Item("item_medkit","Medkit","Consumables"),
+                new Item("item_grappling_hook","Grappling Hook","Gadgets"),
+                new Item("item_zipline_gun","Zipline Gun","Gadgets"),
+                // … (add all items from your previous list)
+            };
+
+            // Remove duplicates by Name
+            items = allItems.GroupBy(i => i.Name).Select(g => g.First()).ToList();
+        }
+
+        private void BuildTabs()
+        {
+            tabControl.TabPages.Clear();
+
+            string search = searchBox.Text.ToLower();
+            var categories = items.Select(i => i.Category).Distinct().ToList();
+
+            foreach (var cat in categories)
+            {
+                var tab = new TabPage(cat);
+                var panel = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoScroll = true };
+                tab.Controls.Add(panel);
+
+                var filtered = items
+                    .Where(i => i.Category == cat && i.Name.ToLower().Contains(search))
+                    .Take(maxItemsToShow)
+                    .ToList();
+
+                foreach (var item in filtered)
+                {
+                    var btn = new Button { Text = item.Name, Width = 200, Height = 40 };
+                    btn.Click += (s, e) => infoLabel.Text = $"Spawned: {item.Name}";
+                    panel.Controls.Add(btn);
+                }
+
+                tabControl.TabPages.Add(tab);
+            }
+        }
+
+        [STAThread]
+        public static void Main()
+        {
+            Application.EnableVisualStyles();
+            Application.Run(new MainForm());
+        }
+    }
+}
