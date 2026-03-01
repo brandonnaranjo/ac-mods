@@ -1,5 +1,9 @@
 @interface ViewController () <UISearchBarDelegate>
 
+@property (nonatomic, strong) UIButton *minimizeButton;
+@property (nonatomic, strong) UIButton *maximizeButton;
+@property (nonatomic, assign) CGRect originalFrame; // Stores original GUI size
+
 @property (nonatomic, strong) UIScrollView *categoryScrollView;
 @property (nonatomic, strong) UIScrollView *itemsScrollView;
 @property (nonatomic, strong) UILabel *infoLabel;
@@ -174,9 +178,42 @@ int itemsCount = sizeof(items)/sizeof(Item);
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+
+    UIImageView *backgroundImageView = [[UIImageView alloc] initWithFrame:self.view.bounds];
+    backgroundImageView.image = [UIImage imageNamed:@"Gojo_Gui.png"]; // Add this image to your project
+    backgroundImageView.contentMode = UIViewContentModeScaleAspectFill;
+    [self.view addSubview:backgroundImageView];
+    [self.view sendSubviewToBack:backgroundImageView]; // Make sure it's behind other views
     
-    self.view.backgroundColor = [UIColor darkGrayColor];
-    
+        // Calculate 8% size of the view width
+    CGFloat buttonSize = self.view.frame.size.width * 0.08;
+
+    // Minimize button (top-right)
+    self.minimizeButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    self.minimizeButton.frame = CGRectMake(self.view.frame.size.width - buttonSize - 10, 40, buttonSize, buttonSize);
+    [self.minimizeButton setImage:[UIImage imageNamed:@"minimize.png"] forState:UIControlStateNormal]; // your image
+    self.minimizeButton.imageView.contentMode = UIViewContentModeScaleAspectFit;
+    [self.minimizeButton addTarget:self action:@selector(minimizeGUI) forControlEvents:UIControlEventTouchUpInside];
+    [self.view addSubview:self.minimizeButton];
+
+    self.minimizeButton.layer.cornerRadius = buttonSize / 2;
+    self.minimizeButton.clipsToBounds = YES;
+
+    // Maximize button (top-right, hidden initially)
+    self.maximizeButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    self.maximizeButton.frame = CGRectMake(self.view.frame.size.width - buttonSize - 10, 40, buttonSize, buttonSize);
+    [self.maximizeButton setImage:[UIImage imageNamed:@"maximize.png"] forState:UIControlStateNormal]; // your image
+    self.maximizeButton.imageView.contentMode = UIViewContentModeScaleAspectFit;
+    self.maximizeButton.hidden = YES;
+    [self.maximizeButton addTarget:self action:@selector(maximizeGUI) forControlEvents:UIControlEventTouchUpInside];
+    [self.view addSubview:self.maximizeButton];
+
+    self.maximizeButton.layer.cornerRadius = buttonSize / 2;
+    self.maximizeButton.clipsToBounds = YES;
+
+    // Store original GUI frame
+    self.originalFrame = self.view.frame;
+
     // Title
     UILabel *titleLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 50, self.view.frame.size.width, 50)];
     titleLabel.text = @"The Honored One";
@@ -326,6 +363,27 @@ int itemsCount = sizeof(items)/sizeof(Item);
 
 - (void)searchBarSearchButtonClicked:(UISearchBar *)searchBar {
     [searchBar resignFirstResponder];
+}
+
+- (void)minimizeGUI {
+    CGFloat buttonSize = self.view.frame.size.width * 0.08;
+
+    [UIView animateWithDuration:0.3 animations:^{
+        // Shrink entire GUI to small square at top-right
+        self.view.frame = CGRectMake(self.view.frame.size.width - buttonSize - 10, 40, buttonSize, buttonSize);
+    } completion:^(BOOL finished) {
+        self.minimizeButton.hidden = YES;
+        self.maximizeButton.hidden = NO;
+    }];
+}
+
+- (void)maximizeGUI {
+    [UIView animateWithDuration:0.3 animations:^{
+        self.view.frame = self.originalFrame; // Restore original size
+    } completion:^(BOOL finished) {
+        self.minimizeButton.hidden = NO;
+        self.maximizeButton.hidden = YES;
+    }];
 }
 
 @end
